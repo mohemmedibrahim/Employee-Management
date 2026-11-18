@@ -1,0 +1,103 @@
+<app-page-header title="Departments" subtitle="Create, edit and remove the departments of your organisation.">
+  <button type="button" class="btn btn-primary" (click)="openDialog(null)">
+    <app-icon name="plus" [size]="16" /> Add Department
+  </button>
+</app-page-header>
+
+@if (loading() && departments().length === 0) {
+  <app-loading message="Loading departments…" />
+} @else if (error(); as message) {
+  <app-error-banner [message]="message" (retry)="load()" />
+} @else if (departments().length === 0) {
+  <section class="card">
+    <app-empty-state
+      icon="departments"
+      title="No departments yet"
+      message="Create your first department to start organising employees."
+    >
+      <button type="button" class="btn btn-primary" (click)="openDialog(null)">
+        <app-icon name="plus" [size]="16" /> Add Department
+      </button>
+    </app-empty-state>
+  </section>
+} @else {
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">All Departments</h2>
+      <span class="muted">{{ departments().length }} total</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table stack-mobile">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Employees</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (department of departments(); track department.id) {
+            <tr>
+              <td data-label="Name">
+                <a class="link strong" [routerLink]="['/departments', department.id]">{{ department.name }}</a>
+              </td>
+              <td data-label="Description" class="cell-wrap">
+                @if (department.description) {
+                  {{ department.description }}
+                } @else {
+                  <span class="muted">No description</span>
+                }
+              </td>
+              <td data-label="Employees">
+                <a
+                  class="badge badge-link"
+                  [routerLink]="['/employees']"
+                  [queryParams]="{ departmentId: department.id }"
+                  [title]="'View employees of ' + department.name"
+                >
+                  {{ department.employeeCount }} employee{{ department.employeeCount === 1 ? '' : 's' }}
+                </a>
+              </td>
+              <td data-label="Actions" class="text-right">
+                <div class="row-actions">
+                  <a
+                    class="icon-btn"
+                    [routerLink]="['/departments', department.id]"
+                    [attr.aria-label]="'View ' + department.name"
+                    title="View details"
+                  >
+                    <app-icon name="eye" [size]="18" />
+                  </a>
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    [attr.aria-label]="'Edit ' + department.name"
+                    title="Edit"
+                    (click)="openDialog(department)"
+                  >
+                    <app-icon name="edit" [size]="18" />
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-btn icon-btn-danger"
+                    [attr.aria-label]="'Delete ' + department.name"
+                    title="Delete"
+                    (click)="delete(department)"
+                  >
+                    <app-icon name="trash" [size]="18" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+@if (dialog(); as state) {
+  <app-department-form-dialog [department]="state.department" (saved)="onSaved($event)" (closed)="closeDialog()" />
+}

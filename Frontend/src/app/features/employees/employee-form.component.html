@@ -1,0 +1,133 @@
+<a class="back-link" routerLink="/employees"><app-icon name="back" [size]="16" /> Back to employees</a>
+
+<app-page-header
+  [title]="isEdit ? 'Edit Employee' : 'Add Employee'"
+  [subtitle]="isEdit ? 'Update the employee details below.' : 'Fill in the details to add a new employee.'"
+/>
+
+@if (loading()) {
+  <app-loading message="Loading form…" />
+} @else if (loadError(); as message) {
+  <app-error-banner [message]="message" (retry)="load()" />
+} @else {
+  <form class="card form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (submitError(); as message) {
+      <div class="alert alert-error" role="alert">
+        <app-icon name="alert" [size]="18" />
+        <span class="alert-text">{{ message }}</span>
+      </div>
+    }
+
+    @if (departments().length === 0) {
+      <div class="alert alert-warning" role="alert">
+        <app-icon name="info" [size]="18" />
+        <span class="alert-text">
+          No departments exist yet. Employees must belong to a department, so please
+          <a class="link" routerLink="/departments" [queryParams]="{ new: 1 }">create a department</a> first.
+        </span>
+      </div>
+    }
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="emp-name" class="form-label">Employee Name <span class="required">*</span></label>
+        <input
+          id="emp-name"
+          type="text"
+          class="form-control"
+          formControlName="name"
+          maxlength="100"
+          autocomplete="name"
+          placeholder="e.g. John Smith"
+          [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
+        />
+        <app-field-error [control]="form.controls.name" label="Name" />
+      </div>
+
+      <div class="form-group">
+        <label for="emp-email" class="form-label">Email <span class="required">*</span></label>
+        <input
+          id="emp-email"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          maxlength="150"
+          autocomplete="email"
+          placeholder="name@company.com"
+          [class.is-invalid]="form.controls.email.invalid && form.controls.email.touched"
+        />
+        <app-field-error [control]="form.controls.email" label="Email" [messages]="emailMessages" />
+      </div>
+
+      <div class="form-group">
+        <label for="emp-phone" class="form-label">Phone Number <span class="required">*</span></label>
+        <input
+          id="emp-phone"
+          type="tel"
+          class="form-control"
+          formControlName="phone"
+          maxlength="20"
+          autocomplete="tel"
+          placeholder="+91 98765 43210"
+          [class.is-invalid]="form.controls.phone.invalid && form.controls.phone.touched"
+        />
+        <app-field-error [control]="form.controls.phone" label="Phone number" [messages]="phoneMessages" />
+      </div>
+
+      <div class="form-group">
+        <label for="emp-salary" class="form-label">Salary <span class="required">*</span></label>
+        <input
+          id="emp-salary"
+          type="number"
+          class="form-control"
+          formControlName="salary"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="e.g. 65000"
+          [class.is-invalid]="form.controls.salary.invalid && form.controls.salary.touched"
+        />
+        <app-field-error [control]="form.controls.salary" label="Salary" [messages]="salaryMessages" />
+      </div>
+
+      <div class="form-group">
+        <label for="emp-joining" class="form-label">Joining Date <span class="required">*</span></label>
+        <input
+          id="emp-joining"
+          type="date"
+          class="form-control"
+          formControlName="joiningDate"
+          [class.is-invalid]="form.controls.joiningDate.invalid && form.controls.joiningDate.touched"
+        />
+        <app-field-error [control]="form.controls.joiningDate" label="Joining date" />
+      </div>
+
+      <div class="form-group">
+        <label for="emp-department" class="form-label">Department <span class="required">*</span></label>
+        <select
+          id="emp-department"
+          class="form-control"
+          formControlName="departmentId"
+          [class.is-invalid]="form.controls.departmentId.invalid && form.controls.departmentId.touched"
+        >
+          <option [ngValue]="null" disabled>Select a department</option>
+          @for (department of departments(); track department.id) {
+            <option [ngValue]="department.id">{{ department.name }}</option>
+          }
+        </select>
+        <app-field-error [control]="form.controls.departmentId" label="Department" />
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn btn-secondary" routerLink="/employees">Cancel</a>
+      <button type="submit" class="btn btn-primary" [disabled]="saving() || departments().length === 0">
+        @if (saving()) {
+          <span class="spinner spinner-sm" aria-hidden="true"></span> Saving…
+        } @else {
+          {{ isEdit ? 'Save Changes' : 'Add Employee' }}
+        }
+      </button>
+    </div>
+  </form>
+}

@@ -1,0 +1,166 @@
+<app-page-header title="Dashboard" subtitle="Live overview of your departments and employees.">
+  <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="load()">
+    <app-icon name="refresh" [size]="16" /> Refresh
+  </button>
+</app-page-header>
+
+@if (loading() && totalEmployees() === 0 && totalDepartments() === 0) {
+  <app-loading message="Loading dashboard…" />
+} @else if (error(); as message) {
+  <app-error-banner [message]="message" (retry)="load()" />
+} @else {
+  <!-- Statistic cards -->
+  <section class="stat-grid" aria-label="Key figures">
+    <article class="stat-card">
+      <span class="stat-icon stat-indigo"><app-icon name="employees" [size]="24" /></span>
+      <div>
+        <p class="stat-label">Total Employees</p>
+        <p class="stat-value">{{ totalEmployees() }}</p>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon stat-teal"><app-icon name="departments" [size]="24" /></span>
+      <div>
+        <p class="stat-label">Total Departments</p>
+        <p class="stat-value">{{ totalDepartments() }}</p>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon stat-amber"><app-icon name="payroll" [size]="24" /></span>
+      <div>
+        <p class="stat-label">Total Payroll</p>
+        <p class="stat-value stat-value-sm">{{ totalPayroll() | currency: currencyCode : 'symbol' : '1.0-0' }}</p>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-icon stat-rose"><app-icon name="trend" [size]="24" /></span>
+      <div>
+        <p class="stat-label">Largest Department</p>
+        @if (largestDepartment(); as largest) {
+          <p class="stat-value stat-value-sm" [title]="largest.name">{{ largest.name }}</p>
+          <p class="stat-hint">{{ largest.employeeCount }} employee{{ largest.employeeCount === 1 ? '' : 's' }}</p>
+        } @else {
+          <p class="stat-value stat-value-sm">—</p>
+        }
+      </div>
+    </article>
+  </section>
+
+  <div class="grid-2">
+    <!-- Recently added employees -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Recently Added Employees</h2>
+        <a routerLink="/employees" class="link">View all</a>
+      </div>
+
+      <div class="toolbar toolbar-compact">
+        <div class="input-icon">
+          <app-icon name="search" [size]="16" />
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Search by name…"
+            aria-label="Search employees by name"
+            [formControl]="searchControl"
+          />
+        </div>
+        <select class="form-control" aria-label="Filter by department" [formControl]="departmentControl">
+          <option [ngValue]="null">All departments</option>
+          @for (department of departments(); track department.id) {
+            <option [ngValue]="department.id">{{ department.name }}</option>
+          }
+        </select>
+        @if (isFiltering()) {
+          <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Clear</button>
+        }
+      </div>
+
+      @if (recentEmployees().length > 0) {
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Joined</th>
+                <th class="text-right">Salary</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (employee of recentEmployees(); track employee.id) {
+                <tr>
+                  <td data-label="Employee">
+                    <a class="person" [routerLink]="['/employees', employee.id]">
+                      <span class="avatar">{{ initials(employee.name) }}</span>
+                      <span class="person-text">
+                        <strong>{{ employee.name }}</strong>
+                        <small>{{ employee.email }}</small>
+                      </span>
+                    </a>
+                  </td>
+                  <td data-label="Department"><span class="badge">{{ employee.departmentName }}</span></td>
+                  <td data-label="Joined">{{ employee.joiningDate | date: 'dd MMM yyyy' }}</td>
+                  <td data-label="Salary" class="text-right">
+                    {{ employee.salary | currency: currencyCode : 'symbol' : '1.2-2' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (isFiltering()) {
+        <app-empty-state
+          icon="search"
+          title="No matching employees"
+          message="Try a different name or department."
+        />
+      } @else {
+        <app-empty-state
+          icon="employees"
+          title="No employees yet"
+          message="Add your first employee to see them here."
+        >
+          <a class="btn btn-primary" routerLink="/employees/new"><app-icon name="plus" [size]="16" /> Add Employee</a>
+        </app-empty-state>
+      }
+    </section>
+
+    <!-- Department-wise employee count -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Department Summary</h2>
+        <a routerLink="/departments" class="link">Manage</a>
+      </div>
+
+      @if (departmentRows().length > 0) {
+        <ul class="bar-list">
+          @for (row of departmentRows(); track row.department.id) {
+            <li>
+              <div class="bar-row">
+                <a class="bar-name" [routerLink]="['/departments', row.department.id]">{{ row.department.name }}</a>
+                <span class="bar-count">{{ row.department.employeeCount }}</span>
+              </div>
+              <div class="bar-track" aria-hidden="true">
+                <div class="bar-fill" [style.width.%]="row.percent"></div>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <app-empty-state
+          icon="departments"
+          title="No departments yet"
+          message="Create a department to start organising employees."
+        >
+          <a class="btn btn-primary" routerLink="/departments" [queryParams]="{ new: 1 }">
+            <app-icon name="plus" [size]="16" /> Add Department
+          </a>
+        </app-empty-state>
+      }
+    </section>
+  </div>
+}
